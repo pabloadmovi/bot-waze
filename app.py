@@ -5,10 +5,12 @@ import re
 
 app = Flask(__name__)
 
+# 🔗 Acortar URLs con TinyURL
 def acortar(url):
     r = requests.get("https://tinyurl.com/api-create.php", params={"url": url})
-    return r.text
+    return r.text.replace("https://", "")  # Quitamos https:// para evitar previews y títulos largos
 
+# 📍 Extraer coordenadas escritas en texto
 def extraer_coordenadas(texto):
     patron = r"-?\d+\.\d+"
     nums = re.findall(patron, texto)
@@ -16,15 +18,32 @@ def extraer_coordenadas(texto):
         return nums[0], nums[1]
     return None, None
 
+# 🌍 Extraer coordenadas desde links de Google Maps
+def extraer_coordenadas_de_url(texto):
+    patron = r"[-]?\d+\.\d+,[-]?\d+\.\d+"
+    match = re.search(patron, texto)
+    if match:
+        lat, lon = match.group().split(",")
+        return lat, lon
+    return None, None
+
+
 @app.route("/webhook", methods=["POST"])
 def webhook():
     lat = request.values.get("Latitude")
     lon = request.values.get("Longitude")
+    texto = request.values.get("Body", "")
+    num_media = int(request.values.get("NumMedia", 0))
 
-    # Si no viene ubicación, intentar leer coordenadas del texto
+    media_url = request.values.get("MediaUrl0") if num_media > 0 else None
+
+    # 1️⃣ Ubicación directa de WhatsApp
     if not lat or not lon:
-        mensaje_usuario = request.values.get("Body", "")
-        lat, lon = extraer_coordenadas(mensaje_usuario)
+        lat, lon = extraer_coordenadas(texto)
+
+    # 2️⃣ Coordenadas dentro de links de Google Maps
+    if not lat or not lon:
+        lat, lon = extraer_coordenadas_de_url(texto)
 
     if lat and lon:
         waze = f"https://waze.com/ul?ll={lat},{lon}&navigate=yes"
@@ -39,13 +58,17 @@ def webhook():
 {texto if texto else '—'}
 
 🚗 Waze (abrir navegación):
-{waze_corto.replace("https://", "")}
+{waze_corto}
 
 🗺️ Google Maps (abrir mapa):
-{maps_corto.replace("https://", "")}
+{maps_corto}
 """
+
+        if media_url:
+            mensaje += "\n📸 Foto recibida correctamente"
+
     else:
-        mensaje = "Mandame una ubicación de WhatsApp o coordenadas tipo: -34.90, -56.16 📍"
+        mensaje = "Mandame una ubicación, coordenadas o link de Google Maps 📍"
 
     return f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
