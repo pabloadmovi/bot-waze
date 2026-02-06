@@ -20,7 +20,7 @@ def webhook():
         waze_corto = acortar(waze)
         maps_corto = acortar(maps)
 
-        return f"""📍 Ubicación recibida
+        mensaje = f"""📍 Ubicación recibida
 
 🚗 Waze:
 {waze_corto}
@@ -29,7 +29,14 @@ def webhook():
 {maps_corto}
 """
     else:
-        return "Reenviame una ubicación de WhatsApp 📍"
+        mensaje = "Reenviame una ubicación de WhatsApp 📍"
+
+    # RESPUESTA EN FORMATO TWIML
+    return f"""<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Message>{mensaje}</Message>
+</Response>""", 200, {"Content-Type": "application/xml"}
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
