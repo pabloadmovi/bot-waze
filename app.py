@@ -36,10 +36,10 @@ def webhook():
         mensaje = f"""📍 Coordenadas recibidas
 
 🚗 Waze:
-{waze_corto}
+{waze_corto.replace("https://", "")}
 
 🗺️ Google Maps:
-{maps_corto}
+{maps_corto.replace("https://", "")}
 """
     else:
         mensaje = "Mandame una ubicación de WhatsApp o coordenadas tipo: -34.90, -56.16 📍"
