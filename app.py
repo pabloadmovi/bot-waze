@@ -33,12 +33,15 @@ def webhook():
         waze_corto = acortar(waze)
         maps_corto = acortar(maps)
 
-        mensaje = f"""📍 Coordenadas recibidas
+        mensaje = f"""📍 Datos recibidos
 
-🚗 Waze:
+📝 Nota:
+{texto if texto else '—'}
+
+🚗 Waze (abrir navegación):
 {waze_corto.replace("https://", "")}
 
-🗺️ Google Maps:
+🗺️ Google Maps (abrir mapa):
 {maps_corto.replace("https://", "")}
 """
     else:
