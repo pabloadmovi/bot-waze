@@ -9,12 +9,26 @@ def acortar(url):
     r = requests.get("https://tinyurl.com/api-create.php", params={"url": url})
     return r.text
 
-def extraer_coordenadas(texto):
-    patron = r"-?\d+\.\d+"
-    nums = re.findall(patron, texto)
-    if len(nums) >= 2:
-        return nums[0], nums[1]
-    return None, None
+@app.route("/webhook", methods=["POST"])
+def webhook():
+    lat = request.values.get("Latitude")
+    lon = request.values.get("Longitude")
+    texto = request.values.get("Body", "")
+    num_media = int(request.values.get("NumMedia", 0))
+
+    media_url = None
+    if num_media > 0:
+        media_url = request.values.get("MediaUrl0")
+
+    # 1️⃣ Ubicación directa de WhatsApp
+    if not lat or not lon:
+        # 2️⃣ Coordenadas escritas
+        lat, lon = extraer_coordenadas(texto)
+
+    # 3️⃣ Coordenadas dentro de link de Google Maps
+    if not lat or not lon:
+        lat, lon = extraer_coordenadas_de_url(texto)
+
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
