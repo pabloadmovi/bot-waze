@@ -20,11 +20,24 @@ def extraer_coordenadas(texto):
 
 # 🌍 Extraer coordenadas desde links de Google Maps
 def extraer_coordenadas_de_url(texto):
-    patron = r"[-]?\d+\.\d+,[-]?\d+\.\d+"
-    match = re.search(patron, texto)
-    if match:
-        lat, lon = match.group().split(",")
-        return lat, lon
+    urls = re.findall(r'(https?://\S+)', texto)
+    
+    for url in urls:
+        try:
+            # Seguir redirecciones (para links cortos de Google Maps)
+            r = requests.get(url, allow_redirects=True, timeout=5)
+            final_url = r.url
+
+            # Buscar coordenadas en la URL final
+            patron = r"[-]?\d+\.\d+,[-]?\d+\.\d+"
+            match = re.search(patron, final_url)
+            if match:
+                lat, lon = match.group().split(",")
+                return lat, lon
+
+        except:
+            continue
+
     return None, None
 
 
