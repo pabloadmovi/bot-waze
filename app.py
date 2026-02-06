@@ -1,6 +1,7 @@
 from flask import Flask, request
 import requests
 import os
+import re
 
 app = Flask(__name__)
 
@@ -8,10 +9,22 @@ def acortar(url):
     r = requests.get("https://tinyurl.com/api-create.php", params={"url": url})
     return r.text
 
+def extraer_coordenadas(texto):
+    patron = r"-?\d+\.\d+"
+    nums = re.findall(patron, texto)
+    if len(nums) >= 2:
+        return nums[0], nums[1]
+    return None, None
+
 @app.route("/webhook", methods=["POST"])
 def webhook():
     lat = request.values.get("Latitude")
     lon = request.values.get("Longitude")
+
+    # Si no viene ubicación, intentar leer coordenadas del texto
+    if not lat or not lon:
+        mensaje_usuario = request.values.get("Body", "")
+        lat, lon = extraer_coordenadas(mensaje_usuario)
 
     if lat and lon:
         waze = f"https://waze.com/ul?ll={lat},{lon}&navigate=yes"
@@ -20,7 +33,7 @@ def webhook():
         waze_corto = acortar(waze)
         maps_corto = acortar(maps)
 
-        mensaje = f"""📍 Ubicación recibida
+        mensaje = f"""📍 Coordenadas recibidas
 
 🚗 Waze:
 {waze_corto}
@@ -29,9 +42,8 @@ def webhook():
 {maps_corto}
 """
     else:
-        mensaje = "Reenviame una ubicación de WhatsApp 📍"
+        mensaje = "Mandame una ubicación de WhatsApp o coordenadas tipo: -34.90, -56.16 📍"
 
-    # RESPUESTA EN FORMATO TWIML
     return f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
     <Message>{mensaje}</Message>
